@@ -41,11 +41,63 @@
     -->
   </body>
   <script>
+
+    var textSended = ''
+    var sessionId = ''
+
     window.watsonAssistantChatOptions = {
       integrationID: "7f2c1429-8b29-4e8a-8b9a-346ad6bd387f", // The ID of this integration.
       region: "au-syd", // The region your integration is hosted in.
       serviceInstanceID: "7e0ce8b2-a61b-4f91-9120-26991bb0c21e", // The ID of your service instance.
-      onLoad: function(instance) { instance.render(); }
+      onLoad: function(instance) { 
+
+        function postData(url = '', data = {}) {
+          // Opciones por defecto estan marcadas con un *
+          const response = fetch(url, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: 'same-origin', // include, *same-origin, omit
+            headers: new Headers({'content-type': 'application/json'}),
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: JSON.stringify(data) // body data type must match "Content-Type" header
+          }).then(result => {
+            console.log('result => ', result)  
+          });
+        }
+
+         // Your handler
+        function handler(obj) {
+          console.log(obj.type, obj.data);
+          if (obj.type === 'send'){
+            textSended = obj.data.input.text
+          }
+
+          if (obj.type === 'receive'){
+            sessionId = obj.data.session_id
+            if (textSended != ''){
+              const body = {data: textSended, sessionId: sessionId}
+              console.log('body => ', body)
+              postData('https://my-safe-place-api.herokuapp.com/chats', body)
+            }
+          }
+        }
+        console.log('instance', instance);
+    
+        // console.log out details of any "receive" event
+        instance.on({ type: "receive", handler: handler });
+        // console.log out details of any "send" event
+        instance.on({ type: "send", handler: handler });
+    
+        // 30 seconds later, unsubscribe from listening to "send" events
+        // setTimeout(function(){
+        //   instance.off({ type: "send", handler: handler});
+        // }, 30000);
+    
+        // Actually render the web chat.
+        instance.render();
+       }
     };
     setTimeout(function(){
       const t=document.createElement('script');
